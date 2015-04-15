@@ -31,7 +31,7 @@ public:
 	unsigned int SizeMB;			//		!MBR & part.4 : 0x5 , ebr_start_block[i+1]-ebr_start_block[1] ,  0xffffffff 
 	unsigned int lngRealSize;						// xBR 510 , 511: 0x55,0xAA
 	bool lastPartition;
-	bool selected;
+	bool  selected;
 
 	PartitionRecord();
 	~PartitionRecord();
@@ -77,7 +77,7 @@ public:
 	void MTKBootRecords::AddTotal (unsigned int a)
 	{
 		TotalBlocks +=a;
-		TotalMB = (long long(TotalBlocks) * C_BlockSize / 0x100000);;
+		TotalMB = (long long(TotalBlocks) * C_BlockSize / 0x100000);
 	}
 
 };
@@ -296,16 +296,16 @@ int Keyhandler()
 	int retval=0;
 	switch (WaitKey(true))
 	{
-	case 0x71:
+	case 'q':
 		retval=1;
 		break;
-	case 0x61:
+	case 'a':
 		retval=-1;
 		break;
-	case 0x77:
+	case 'w':
 		retval=10;
 		break;
-	case 0x73:
+	case 's':
 		retval=-10;
 		break;
 	case 0x65:
