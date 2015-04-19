@@ -106,15 +106,22 @@ int Menu_Main()
 {
 	MTKBootRecords OrigBRs;
 	MTKBootRecords EditedBRs;
+	int key = -1;
 
 	while (true)
 	{
-		cout << "\nMain Menu:\n\t"
-			"Read Boot records\t 1\n"
-			"\tChange Partition\t 2\n"
-			"\tExit\t\t\t x\n\t\t\t\t";
-		switch (WaitKey(true))
+		if (key != -1)
 		{
+			cout << "\nMain Menu:\n\t"
+				"Read Boot records\t 1\n"
+				"\tChange Partition\t 2\n"
+				"\tExit\t\t\t x\n\t\t\t\t";
+			key = WaitKey(true);
+		}
+		switch (key)
+		{
+		case -1:
+			key = 0;
 		case '1':
 			OrigBRs = ReadFiles();
 			OrigBRs.PrintBootrecord();
@@ -225,7 +232,7 @@ int SelectPartition(MTKBootRecords BRs)
 	int intSelectedBR = 0;
 	int intSelectedPartition = 0;
 	string intSelectedPartitionName = "";
-	cout << "Select Boot Record: \n";													//Select a BootRecord
+	cout << "\n Select Boot Record: \n";													//Select a BootRecord
 	for (int i = 0; i < BRs.BootRecords.size(); i++)
 	{
 		cout << '\t' + BRs.BootRecords[i].BRName << ":\t" << i << '\n';
@@ -255,8 +262,15 @@ int SelectPartition(MTKBootRecords BRs)
 		else if (0x0 <= KeyToNumber(key) & KeyToNumber(key) < BRs.BootRecords[intSelectedBR].PRs.size())
 		{
 			intSelectedPartition = KeyToNumber(key);
-
-			cout << "\n\t\t\t" + BRs.BootRecords[intSelectedBR].BRName + " partition " << intSelectedPartition << " selected.";
+			cout << "\n\t\t\t" + BRs.BootRecords[intSelectedBR].BRName + " partition " << intSelectedPartition;
+			if (BRs.BootRecords[intSelectedBR].PRs[intSelectedPartition].Type!=0x83)
+			{
+				 cout << " is not valid partition.";
+			}
+			else
+			{
+				cout << " selected.";
+			}
 			break;
 		}
 		else cout << "\t\t\tPlease enter a correct Partition number!\n";
@@ -265,10 +279,9 @@ int SelectPartition(MTKBootRecords BRs)
 	intSelected = intSelectedBR * 4 + intSelectedPartition;
 	return intSelected;
 
-	string str = "123";
+	//string str = "123";
 	//string:: ( str ) >> intSelectedBR;
-	int value = atoi(str.c_str());
-
+	//int value = atoi(str.c_str());
 }
 
 
@@ -284,12 +297,17 @@ int ChangePartition(MTKBootRecords BRs, int intSelected)
 		if (system("CLS")) system("clear");
 		BRs.PrintBootrecord();
 		value = Keyhandler();
-		BRs.BootRecords[BR].PRs[PT].Lenght = BRs.BootRecords[BR].PRs[PT].Lenght + value;
+		if (BRs.BootRecords[BR].PRs[PT].lastPartition)
+		{
+			BRs.BootRecords[BR].PRs[PT].Lenght = BRs.BootRecords[BR].PRs[PT].Lenght - value;
+		}
+		else
+		{
+			BRs.BootRecords[BR].PRs[PT].Lenght = BRs.BootRecords[BR].PRs[PT].Lenght + value;
+		}
 		PartitionRecord::SetPartitionData(BRs.BootRecords[BR].PRs[PT]);
-		//if (system("CLS")) system("clear");
 		//BRs.PrintBootrecord();
 	} while (value);
-
 
 	return 0;
 }
@@ -297,39 +315,52 @@ int ChangePartition(MTKBootRecords BRs, int intSelected)
 int Keyhandler()
 {
 	int retval = 0;
-	switch (WaitKey(true))
+	while (retval == 0)
 	{
-	case 'q':
-		retval = 1;
-		break;
-	case 'a':
-		retval = -1;
-		break;
-	case 'w':
-		retval = 10;
-		break;
-	case 's':
-		retval = -10;
-		break;
-	case 'e':
-		retval = 100;
-		break;
-	case 'd':
-		retval = -100;
-		break;
-	case 't':
-		retval = -100;
-		break;
-	case 'g':
-		retval = -100;
-		break;
-	case 'x':
-		retval = 0;
-		break;
-
-		//default:
-		//break;
+		switch (WaitKey(false))
+		{
+		case 'q':
+			retval = 0x1;
+			break;
+		case 'a':
+			retval = -0x1;
+			break;
+		case 'w':
+			retval = 0x10;
+			break;
+		case 's':
+			retval = -0x10;
+			break;
+		case 'e':
+			retval = 0x100;
+			break;
+		case 'd':
+			retval = -0x100;
+			break;
+		case 't':
+			retval = 0x800;
+			break;
+		case 'g':
+			retval = -0x800;
+			break;
+		case 'z':
+			retval = 0x5000;
+			break;
+		case 'h':
+			retval = -0x5000;
+			break;
+		case 'u':
+			retval = 0x32000;
+			break;
+		case 'j':
+			retval = -0x32000;
+			break;
+		case 'x':
+			return retval;
+			break;
+		}
 	}
+	
 	return retval;
 }
 
@@ -343,9 +374,8 @@ int SavePartition(MTKBootRecords BRs)
 
 bool Continue(char* str)
 {
-	//char thing;
 	cout << str;
-	//cin >> thing;
+
 	if (WaitKey(true) == 'y')
 		return true;
 	return false;
@@ -354,15 +384,11 @@ bool Continue(char* str)
 int WaitKey(bool echo)        //lowercasera kell alakítani + számoknál számot adjon vissza
 {
 	/* while (kbhit())
-	printf("you have touched key.\n");
-	//if (system("CLS")) system("clear");
+	//printf("you have touched key.\n");
 	//clrscr(); */
 	if (echo)
 	{
-		cout << "  ";
-		int ch = getche();
-		cout << '\n';
-		return ch;
+		return getche();
 	}
 
 	return getch();
@@ -469,25 +495,22 @@ PartitionRecord::PartitionRecord() //ide meg kell construktor
 
 PartitionRecord PartitionRecord::Add(const char* rawData, int pNumber)
 {
-	PartitionRecord pr;
-	pr.Type = rawData[4];
-	pr.Offset = MTKBootRecords::FourByteToInt(&rawData[8]);
-	pr.Lenght = MTKBootRecords::FourByteToInt(&rawData[12]);
+	PartitionRecord prNewRecord;
+	prNewRecord.Type = rawData[4];
+	prNewRecord.Offset = MTKBootRecords::FourByteToInt(&rawData[8]);
+	prNewRecord.Lenght = MTKBootRecords::FourByteToInt(&rawData[12]);
 
 	if (pNumber < MTKBootRecords::C_SlotPerBR - 1)
 	{
 		if (!PartitionRecord::ValidPartition(&rawData[MTKBootRecords::C_PartRecSize], pNumber + 1))
 		{
-			pr.lastPartition = true;
-			//pr.Lenght = 0xffffffff - pr.Lenght;
+			prNewRecord.lastPartition = true;
+			//prNewRecord.Lenght = 0xffffffff - prNewRecord.Lenght;
 		}
 
 	}
-	SetPartitionData(pr);
-	//if(pr.Type!=5)
-	//pr.lngRealSize=pr.Lenght;
-
-	//pr.SizeMB=(long long(pr.lngRealSize)*512/0x100000);
+	SetPartitionData(prNewRecord);
+	
 
 	/*for (int i = 0; i < 502; i++)
 	{
@@ -495,7 +518,7 @@ PartitionRecord PartitionRecord::Add(const char* rawData, int pNumber)
 	cout <<dec<< noshowbase << i << "-" << i << "  " << showbase << hex << internal << setfill('0')  << setw(4) << int(rawData[i]) << '\n';
 	}*/
 	//return NewRecord;
-	return pr;
+	return prNewRecord;
 }
 
 void PartitionRecord::SetPartitionData(PartitionRecord &pr)
